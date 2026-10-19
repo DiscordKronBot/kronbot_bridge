@@ -5,6 +5,7 @@ FiveM resource that links your server to **[Kron](https://kronbot.xyz)**, the Di
 - 🎫 the player's characters (name, job, phone, money) at the top of their Discord tickets
 - 📍 **Unstuck** and 🚗 **return a vehicle to the garage** from Discord (staff)
 - 🚨 in-city `/report`: a thread in your Discord, staff answer there, the player reads it in game
+- 📊 a live player board in Discord: players online, slots, jobs on duty (resource 1.4.0+)
 
 The resource only makes **outbound** HTTPS calls to kronbot.xyz. There is no port to open.
 
@@ -31,5 +32,5 @@ Keep the token **only** in `server.cfg`: treat it like a password. A new token f
 
 ## Data
 
-Kron receives only what is needed: Discord ID, license, player name, and, on staff request, the character's
+Kron receives only what is needed: Discord ID, license, player name, the number of players per job, and, on staff request, the character's
 name, job, phone and money (each field can be turned off in the dashboard). See https://kronbot.xyz/legal/privacy.

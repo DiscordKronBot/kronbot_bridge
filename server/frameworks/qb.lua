@@ -21,6 +21,11 @@ local function sharedLists(kind)
   return QBCore.Shared.Jobs or {}, QBCore.Shared.Gangs or {}
 end
 
+local function onlinePlayers(kind)
+  if kind == 'qbox' then return exports.qbx_core:GetQBPlayers() or {} end
+  return exports['qb-core']:GetCoreObject().Functions.GetQBPlayers() or {}
+end
+
 local function getPlayerFn(kind)
   if kind == 'qbox' then
     return function(citizenid) return exports.qbx_core:GetPlayerByCitizenId(citizenid) end
@@ -116,6 +121,25 @@ function CreateQbAdapter(kind)
       if name ~= 'none' then out.gangs[#out.gangs + 1] = { name = name, label = gang.label or name } end
     end
     return out
+  end
+
+  --- Online players per job (live board, tags): total and on duty. Unemployed is left out.
+  function adapter.onlineJobs()
+    local byName, list = {}, {}
+    for _, player in pairs(onlinePlayers(kind)) do
+      local job = player.PlayerData and player.PlayerData.job
+      if job and job.name and job.name ~= 'unemployed' then
+        local entry = byName[job.name]
+        if not entry then
+          entry = { name = job.name, label = job.label or job.name, type = job.type, count = 0, onDuty = 0 }
+          byName[job.name] = entry
+          list[#list + 1] = entry
+        end
+        entry.count = entry.count + 1
+        if job.onduty then entry.onDuty = entry.onDuty + 1 end
+      end
+    end
+    return list
   end
 
   return adapter

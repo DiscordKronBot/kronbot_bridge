@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'kronbot_bridge'
 author 'Kron (kronbot.xyz)'
-description 'Links your FiveM server to the Kron Discord bot: player profiles in tickets, staff actions, in-city /report.'
-version '1.3.0'
+description 'Links your FiveM server to the Kron Discord bot: player profiles in tickets, staff actions, live player board, in-city /report.'
+version '1.4.0'
 
 server_scripts {
   '@oxmysql/lib/MySQL.lua',

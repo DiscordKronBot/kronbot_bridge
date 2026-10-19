@@ -129,11 +129,18 @@ local registerReport
 local function heartbeat()
   local players = {}
   for _, src in ipairs(GetPlayers()) do players[#players + 1] = playerInfo(src) end
+  local jobs = {}
+  if adapter and adapter.onlineJobs then
+    local ok, res = pcall(adapter.onlineJobs)
+    if ok and res then jobs = res end
+  end
   request('POST', '/hello', {
     version = VERSION,
     framework = framework,
     serverName = GetConvar('sv_projectName', GetConvar('sv_hostname', 'FiveM')):sub(1, 120),
+    maxPlayers = GetConvarInt('sv_maxclients', 0),
     players = players,
+    jobs = jobs,
   }, function(status, data)
     if status == 200 and connected ~= true then
       print(L('connected', framework))
