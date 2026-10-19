@@ -12,6 +12,15 @@ local function trim(s)
   return (s or ''):gsub('^%s+', ''):gsub('%s+$', '')
 end
 
+--- Jobs and gangs defined on the server (QBCore shared tables, Qbox exports).
+local function sharedLists(kind)
+  if kind == 'qbox' then
+    return exports.qbx_core:GetJobs() or {}, exports.qbx_core:GetGangs() or {}
+  end
+  local QBCore = exports['qb-core']:GetCoreObject()
+  return QBCore.Shared.Jobs or {}, QBCore.Shared.Gangs or {}
+end
+
 local function getPlayerFn(kind)
   if kind == 'qbox' then
     return function(citizenid) return exports.qbx_core:GetPlayerByCitizenId(citizenid) end
@@ -65,7 +74,7 @@ function CreateQbAdapter(kind)
       local ped = GetPlayerPed(player.PlayerData.source)
       SetEntityCoords(ped, c.x, c.y, c.z, false, false, false, false)
       SetEntityHeading(ped, c.w)
-      TriggerClientEvent('chat:addMessage', player.PlayerData.source, { color = { 217, 119, 87 }, args = { 'Dravo', L('unstuck') } })
+      TriggerClientEvent('chat:addMessage', player.PlayerData.source, { color = { 217, 119, 87 }, args = { 'Kron', L('unstuck') } })
       return { mode = 'online' }
     end
     local changed = MySQL.update.await('UPDATE players SET position = ? WHERE citizenid = ? AND license = ?', {
@@ -91,9 +100,22 @@ function CreateQbAdapter(kind)
     })
     local player = getPlayer(citizenid)
     if player then
-      TriggerClientEvent('chat:addMessage', player.PlayerData.source, { color = { 217, 119, 87 }, args = { 'Dravo', L('garage', trim(plate)) } })
+      TriggerClientEvent('chat:addMessage', player.PlayerData.source, { color = { 217, 119, 87 }, args = { 'Kron', L('garage', trim(plate)) } })
     end
     return {}
+  end
+
+  --- Jobs and gangs (name, label, type), without the "nobody" entries.
+  function adapter.jobs()
+    local jobs, gangs = sharedLists(kind)
+    local out = { jobs = {}, gangs = {} }
+    for name, job in pairs(jobs) do
+      if name ~= 'unemployed' then out.jobs[#out.jobs + 1] = { name = name, label = job.label or name, type = job.type } end
+    end
+    for name, gang in pairs(gangs) do
+      if name ~= 'none' then out.gangs[#out.gangs + 1] = { name = name, label = gang.label or name } end
+    end
+    return out
   end
 
   return adapter

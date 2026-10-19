@@ -9,9 +9,9 @@ local Strings = {
     closed = 'Ton report #%s a été fermé par %s.',
     unstuck = 'Le staff t’a débloqué.',
     garage = 'Ton véhicule %s a été remis au garage par le staff.',
-    no_token = '[dravo_bridge] Aucun token : ajoute  set dravo_token "..."  dans ton server.cfg (dravo.run, module FiveM).',
-    bad_token = '[dravo_bridge] Token refusé par Dravo. Génère-en un nouveau dans le dashboard.',
-    connected = '[dravo_bridge] Connecté à Dravo (%s).',
+    no_token = '[kronbot_bridge] Aucun token : ajoute  set kron_token "..."  dans ton server.cfg (kronbot.xyz, module FiveM).',
+    bad_token = '[kronbot_bridge] Token refusé par Kron. Génère-en un nouveau dans le dashboard.',
+    connected = '[kronbot_bridge] Connecté à Kron (%s).',
   },
   en = {
     usage = 'Usage: /%s <your message>',
@@ -23,9 +23,9 @@ local Strings = {
     closed = 'Your report #%s was closed by %s.',
     unstuck = 'Staff unstuck you.',
     garage = 'Your vehicle %s was returned to the garage by staff.',
-    no_token = '[dravo_bridge] No token: add  set dravo_token "..."  to your server.cfg (dravo.run, FiveM module).',
-    bad_token = '[dravo_bridge] Token rejected by Dravo. Generate a new one in the dashboard.',
-    connected = '[dravo_bridge] Connected to Dravo (%s).',
+    no_token = '[kronbot_bridge] No token: add  set kron_token "..."  to your server.cfg (kronbot.xyz, FiveM module).',
+    bad_token = '[kronbot_bridge] Token rejected by Kron. Generate a new one in the dashboard.',
+    connected = '[kronbot_bridge] Connected to Kron (%s).',
   },
 }
 

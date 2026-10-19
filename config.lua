@@ -1,7 +1,7 @@
 Config = {}
 
--- The token is NOT set here: put it in server.cfg ->  set dravo_token "dravo_..."
-Config.ApiUrl = 'https://dravo.run/api/bridge'
+-- The token is NOT set here: put it in server.cfg ->  set kron_token "kron_..."
+Config.ApiUrl = 'https://kronbot.xyz/api/bridge'
 
 -- 'auto' detects qbx_core (Qbox) or qb-core (QBCore). ESX support is coming.
 Config.Framework = 'auto'
@@ -9,11 +9,12 @@ Config.Framework = 'auto'
 -- Language of the messages players see in game: 'fr' or 'en'
 Config.Locale = 'fr'
 
--- How often the resource talks to Dravo (seconds)
+-- How often the resource talks to Kron (seconds)
 Config.HeartbeatSeconds = 30
 Config.PollSeconds = 3
 
--- In-city report command (/report <message>) and per-player cooldown (seconds)
+-- In-city report command (/report <message>) and per-player cooldown (seconds).
+-- Registered only when reports are on in the Kron dashboard; false = never.
 Config.ReportCommand = 'report'
 Config.ReportCooldown = 15
 
