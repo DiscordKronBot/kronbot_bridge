@@ -1,5 +1,5 @@
--- QBCore and Qbox share the same database tables (players, player_vehicles).
--- Only the way to reach an online player differs.
+-- QBCore and Qbox (FiveM) and RSG-Core (RedM, a QBCore fork) share the same players table.
+-- Only the way to reach an online player differs. RSG-Core has no player_vehicles: no garage there.
 
 local function decode(v)
   if type(v) == 'table' then return v end
@@ -9,28 +9,35 @@ local function decode(v)
 end
 
 local function trim(s)
-  return (s or ''):gsub('^%s+', ''):gsub('%s+$', '')
+  -- Parentheses: gsub also returns a count, which must not leak into the caller's arguments.
+  return ((s or ''):gsub('^%s+', ''):gsub('%s+$', ''))
 end
 
 --- Jobs and gangs defined on the server (QBCore shared tables, Qbox exports).
+local function core(kind)
+  if kind == 'rsg' then return exports['rsg-core']:GetCoreObject() end
+  return exports['qb-core']:GetCoreObject()
+end
+
 local function sharedLists(kind)
   if kind == 'qbox' then
     return exports.qbx_core:GetJobs() or {}, exports.qbx_core:GetGangs() or {}
   end
-  local QBCore = exports['qb-core']:GetCoreObject()
+  local QBCore = core(kind)
   return QBCore.Shared.Jobs or {}, QBCore.Shared.Gangs or {}
 end
 
 local function onlinePlayers(kind)
   if kind == 'qbox' then return exports.qbx_core:GetQBPlayers() or {} end
-  return exports['qb-core']:GetCoreObject().Functions.GetQBPlayers() or {}
+  if kind == 'rsg' then return core(kind).Functions.GetRSGPlayers() or {} end
+  return core(kind).Functions.GetQBPlayers() or {}
 end
 
 local function getPlayerFn(kind)
   if kind == 'qbox' then
     return function(citizenid) return exports.qbx_core:GetPlayerByCitizenId(citizenid) end
   end
-  local QBCore = exports['qb-core']:GetCoreObject()
+  local QBCore = core(kind)
   return function(citizenid) return QBCore.Functions.GetPlayerByCitizenId(citizenid) end
 end
 
@@ -62,6 +69,7 @@ function CreateQbAdapter(kind)
   end
 
   function adapter.vehicles(citizenid)
+    if kind == 'rsg' then return nil, 'unsupported' end
     local rows = MySQL.query.await('SELECT plate, vehicle, state, garage FROM player_vehicles WHERE citizenid = ?', { citizenid }) or {}
     local list = {}
     for _, row in ipairs(rows) do
@@ -72,7 +80,7 @@ function CreateQbAdapter(kind)
 
   --- Online: teleport now. Offline: rewrite the saved position.
   function adapter.unstuck(license, citizenid)
-    local c = Config.UnstuckCoords
+    local c = kind == 'rsg' and Config.UnstuckCoordsRedM or Config.UnstuckCoords
     local player = getPlayer(citizenid)
     if player then
       if player.PlayerData.license ~= license then return nil, 'not_found' end
@@ -93,6 +101,7 @@ function CreateQbAdapter(kind)
 
   --- Despawn the vehicle if it is out, then mark it as stored.
   function adapter.garage(citizenid, plate)
+    if kind == 'rsg' then return nil, 'unsupported' end
     local row = MySQL.single.await('SELECT plate, garage FROM player_vehicles WHERE citizenid = ? AND plate = ?', { citizenid, plate })
     if not row then return nil, 'not_found' end
     for _, veh in ipairs(GetAllVehicles()) do

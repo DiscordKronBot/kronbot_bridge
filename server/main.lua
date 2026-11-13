@@ -1,10 +1,12 @@
--- kronbot_bridge: links this FiveM server to Kron.
+-- kronbot_bridge: links this FiveM or RedM server to Kron (the token says which Kron module).
 -- Outbound HTTPS only (no port to open): heartbeat, job polling, results, /report.
 
 -- kron_token; dravo_token is the name before 1.3.0, still read so old server.cfg files keep working.
 local TOKEN = GetConvar('kron_token', '')
 if TOKEN == '' then TOKEN = GetConvar('dravo_token', '') end
 local VERSION = GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or '1.0.0'
+-- 'gta5' (FiveM) or 'rdr3' (RedM): Kron refuses a FiveM token on RedM and the other way around.
+local GAME = GetConvar('gamename', 'gta5')
 local framework, adapter = nil, nil
 local connected = false
 
@@ -16,13 +18,23 @@ local function detectFramework()
   if Config.Framework ~= 'auto' then return Config.Framework end
   if GetResourceState('qbx_core') == 'started' then return 'qbox' end
   if GetResourceState('qb-core') == 'started' then return 'qbcore' end
+  if GetResourceState('rsg-core') == 'started' then return 'rsg' end
   if GetResourceState('es_extended') == 'started' then return 'esx' end
+  if GetResourceState('vorp_core') == 'started' then return 'vorp' end
   return 'none'
 end
 
+local apiUrl = Config.ApiUrl
+
 local function request(method, path, body, cb)
-  PerformHttpRequest(Config.ApiUrl .. path, function(status, text)
+  PerformHttpRequest(apiUrl .. path, function(status, text)
     local data = nil
+    -- Status 0 = the connection itself failed (no HTTP answer). Try the fallback address once: the next
+    -- request (3 s later) uses it.
+    if status == 0 and Config.ApiUrlFallback and apiUrl ~= Config.ApiUrlFallback then
+      apiUrl = Config.ApiUrlFallback
+      print(L('fallback', apiUrl))
+    end
     if text and text ~= '' then
       local ok, decoded = pcall(json.decode, text)
       if ok then data = decoded end
@@ -42,7 +54,7 @@ end
 local function identifier(src, kind)
   local id = GetPlayerIdentifierByType(src, kind)
   if not id then return nil end
-  if kind == 'discord' then return id:gsub('^discord:', '') end
+  if kind == 'discord' then return (id:gsub('^discord:', '')) end
   return id
 end
 
@@ -136,8 +148,9 @@ local function heartbeat()
   end
   request('POST', '/hello', {
     version = VERSION,
+    game = GAME,
     framework = framework,
-    serverName = GetConvar('sv_projectName', GetConvar('sv_hostname', 'FiveM')):sub(1, 120),
+    serverName = GetConvar('sv_projectName', GetConvar('sv_hostname', GAME == 'rdr3' and 'RedM' or 'FiveM')):sub(1, 120),
     maxPlayers = GetConvarInt('sv_maxclients', 0),
     players = players,
     jobs = jobs,
@@ -145,6 +158,10 @@ local function heartbeat()
     if status == 200 and connected ~= true then
       print(L('connected', framework))
       connected = true
+    end
+    if status == 409 and data and data.error == 'wrong_game' and connected ~= 'wrong_game' then
+      print(L('wrong_game'))
+      connected = 'wrong_game'
     end
     -- /report exists only once the server turns it on in the dashboard, so a
     -- server with its own /report keeps it.
@@ -158,7 +175,7 @@ CreateThread(function()
     return
   end
   framework = detectFramework()
-  if framework == 'qbcore' or framework == 'qbox' then
+  if framework == 'qbcore' or framework == 'qbox' or framework == 'rsg' then
     adapter = CreateQbAdapter(framework)
   else
     print(('[kronbot_bridge] Framework "%s" not supported yet: profiles and staff actions are disabled, /report still works.'):format(framework))
@@ -173,7 +190,7 @@ CreateThread(function()
 
   while true do
     Wait(Config.PollSeconds * 1000)
-    if connected ~= 'bad_token' then
+    if connected ~= 'bad_token' and connected ~= 'wrong_game' then
       request('GET', '/poll', nil, function(status, data)
         if status == 200 and data and data.jobs then
           for _, job in ipairs(data.jobs) do CreateThread(function() runJob(job) end) end
@@ -185,11 +202,11 @@ end)
 
 -- Keep the Discord <-> license link fresh between heartbeats.
 AddEventHandler('playerJoining', function()
-  if TOKEN ~= '' then request('POST', '/player', { event = 'join', player = playerInfo(source) }) end
+  if TOKEN ~= '' and connected ~= 'wrong_game' then request('POST', '/player', { event = 'join', player = playerInfo(source) }) end
 end)
 
 AddEventHandler('playerDropped', function()
-  if TOKEN ~= '' then request('POST', '/player', { event = 'drop', player = playerInfo(source) }) end
+  if TOKEN ~= '' and connected ~= 'wrong_game' then request('POST', '/player', { event = 'drop', player = playerInfo(source) }) end
 end)
 
 -- ----- /report -----
